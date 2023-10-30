@@ -57,7 +57,7 @@ class PokemonListViewModel @Inject constructor(
                         }
 
                         val url =
-                            "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${number}.png"
+                            "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${number}.png"
                         Pokemon(
                             pokemon?.name!!.replaceFirstChar(Char::titlecase),
                             url,
