@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName
 
 data class PokemonDetail(
     @SerializedName("abilities")
-    val abilities: List<Ability?>?,
+    val abilities: List<Ability>?,
     @SerializedName("base_experience")
     val baseExperience: Int?,
     @SerializedName("forms")
