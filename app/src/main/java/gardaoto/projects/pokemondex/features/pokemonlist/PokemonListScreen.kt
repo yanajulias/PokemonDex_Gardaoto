@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -32,11 +34,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -52,7 +56,8 @@ import gardaoto.projects.pokemondex.domain.Pokemon
 
 @Composable
 fun PokemonListScreen(
-    navController: NavController
+    navController: NavController,
+    pokemonListViewModel: PokemonListViewModel = hiltViewModel()
 ) {
     Surface(
         color = MaterialTheme.colorScheme.background,
@@ -67,8 +72,59 @@ fun PokemonListScreen(
                     .fillMaxWidth()
                     .align(Alignment.CenterHorizontally)
             )
+            SearchBar(
+                hint = "Search...",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                pokemonListViewModel.searchPokemonList(it)
+            }
             Spacer(modifier = Modifier.height(16.dp))
             PokemonList(navController = navController)
+        }
+    }
+}
+
+@Composable
+fun SearchBar(
+    modifier: Modifier = Modifier,
+    hint: String = "",
+    onSearch: (String) -> Unit = {}
+) {
+    var text by remember {
+        mutableStateOf("")
+    }
+    var isHintDisplayed by remember {
+        mutableStateOf(hint != "Search for..")
+    }
+
+    Box(modifier = modifier) {
+        BasicTextField(
+            value = text,
+            onValueChange = {
+                text = it
+                onSearch(it)
+            },
+            maxLines = 1,
+            singleLine = true,
+            textStyle = TextStyle(color = Color.Black),
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(5.dp, CircleShape)
+                .background(Color.White, CircleShape)
+                .padding(horizontal = 20.dp, vertical = 12.dp)
+                .onFocusChanged {
+                    isHintDisplayed = !it.isFocused && text.isNotEmpty()
+                }
+        )
+        if (isHintDisplayed) {
+            Text(
+                text = hint,
+                color = Color.LightGray,
+                modifier = Modifier
+                    .padding(horizontal = 20.dp, vertical = 12.dp)
+            )
         }
     }
 }
@@ -83,6 +139,8 @@ fun PokemonList(
     val loadError by remember { viewModel.loadError }
     val isLoading by remember { viewModel.isLoading }
 
+    val isSearching by remember { viewModel.isSearching }
+
     LazyColumn(contentPadding = PaddingValues(16.dp)) {
         val itemCount = if (pokemonList.size % 2 == 0) {
             pokemonList.size / 2
@@ -91,7 +149,7 @@ fun PokemonList(
         }
 
         items(itemCount) {
-            if (it >= itemCount - 1 && !endReached && !isLoading) {
+            if (it >= itemCount - 1 && !endReached && !isLoading && !isSearching) {
                 viewModel.loadPokemonList()
             }
             PokemonRow(
@@ -175,7 +233,8 @@ fun PokemonItem(
             } else if (state is AsyncImagePainter.State.Loading) {
                 CircularProgressIndicator(
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.scale(0.5f)
+                    modifier = Modifier
+                        .scale(0.5f)
                         .align(Alignment.CenterHorizontally)
                 )
             }
@@ -216,7 +275,7 @@ fun PokemonRow(
                     modifier = modifier.weight(1f)
                 )
             } else {
-                Spacer(modifier = modifier.width(16.dp))
+                Spacer(modifier = modifier.weight(1f))
             }
         }
         Spacer(modifier = modifier.height(16.dp))

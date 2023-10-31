@@ -13,6 +13,7 @@ import gardaoto.projects.pokemondex.domain.Pokemon
 import gardaoto.projects.pokemondex.repository.PokemonRepository
 import gardaoto.projects.pokemondex.util.Constants.PAGE_SIZE
 import gardaoto.projects.pokemondex.util.Resource
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -27,6 +28,10 @@ class PokemonListViewModel @Inject constructor(
     var loadError = mutableStateOf("")
     var isLoading = mutableStateOf(false)
     var endReached = mutableStateOf(false)
+
+    private var cachedPokemonList = listOf<Pokemon>()
+    private var isSearchStarting = true
+    var isSearching = mutableStateOf(false)
 
     init {
         loadPokemonList()
@@ -80,4 +85,31 @@ class PokemonListViewModel @Inject constructor(
             }
         }
     }
+
+    fun searchPokemonList(query: String) {
+        val listToSearch = if(isSearchStarting) {
+            pokemonList.value
+        } else {
+            cachedPokemonList
+        }
+        viewModelScope.launch(Dispatchers.Default) {
+            if(query.isEmpty()) {
+                pokemonList.value = cachedPokemonList
+                isSearching.value = false
+                isSearchStarting = true
+                return@launch
+            }
+            val results = listToSearch.filter {
+                it.pokemonName.contains(query.trim(), ignoreCase = true) ||
+                        it.number.toString() == query.trim()
+            }
+            if(isSearchStarting) {
+                cachedPokemonList = pokemonList.value
+                isSearchStarting = false
+            }
+            pokemonList.value = results
+            isSearching.value = true
+        }
+    }
+
 }
